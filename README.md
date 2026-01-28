@@ -6,16 +6,17 @@
 
 Create MSIX packages from a Compose Desktop release build with a single task.
 The plugin renders MSIX PNG resources from a single SVG, writes an `AppxManifest.xml`,
-and packs the release output into an MSIX using `makeappx.exe`.
+indexes resources with `makepri.exe`, and packs the release output into an MSIX
+using `makeappx.exe`.
 
 ## Requirements
 
-- Windows host with the Windows SDK installed (for `makeappx.exe`).
+- Windows host with the Windows SDK installed (for `makeappx.exe`, `makepri.exe`, and `signtool.exe`).
 - Compose Desktop `createReleaseDistributable` task available in the target project.
 
 Note that the Windows GitHub runner comes with the Windows SDK installed.
 
-### Install makeappx.exe
+### Install makeappx.exe, makepri.exe, and signtool.exe
 
 To install the Windows SDK components needed by `makeappx.exe`:
 
@@ -29,7 +30,7 @@ Apply the plugin and configure the MSIX manifest values:
 
 ```kotlin
 plugins {
-    id("de.stefan-oltmann.gradle-msix-plugin") version "0.1.1"
+    id("de.stefan-oltmann.gradle-msix-plugin") version "0.2.0"
 }
 
 msix {
@@ -70,3 +71,4 @@ Run the packaging task:
 - `createMsix` - Runs `createReleaseDistributable`, creates resources + manifest, packs the MSIX, and signs it when a PFX is configured.
 - `createMsixIcons` - Creates the MSIX PNG resources from the SVG.
 - `createAppxManifest` - Writes AppxManifest.xml into the app directory.
+- `createMsixPri` - Indexes resources and creates `resources.pri` using `makepri.exe`.

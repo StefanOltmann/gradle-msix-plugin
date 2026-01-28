@@ -61,6 +61,8 @@ class MsixPlugin : Plugin<Project> {
 
         val resourcesDir = appDirectory.map { it.dir("resources") }
         val manifestFile = appDirectory.map { it.file("AppxManifest.xml") }
+        val priFile = appDirectory.map { it.file("resources.pri") }
+        val priConfigFile = project.layout.buildDirectory.file("msix/priconfig.xml")
         val msixOutputFile = project.layout.buildDirectory.file(packageNameProvider.map { "$it.msix" })
 
         /*
@@ -98,6 +100,20 @@ class MsixPlugin : Plugin<Project> {
             }
 
         /*
+         * Index the resources to generate resources.pri for scale-qualified assets.
+         */
+        val createPri = project.tasks.register("createMsixPri", CreateMsixPriTask::class.java) { task ->
+            task.appDirectory.set(appDirectory)
+            task.manifestFile.set(manifestFile)
+            task.processorArchitecture.set(extension.manifest.processorArchitecture)
+            task.priFile.set(priFile)
+            task.priConfigFile.set(priConfigFile)
+            task.dependsOn(createIcons, createManifest)
+            task.group = "msix"
+            task.description = "Create resources.pri using makepri.exe."
+        }
+
+        /*
          * Package the app directory into the final MSIX file.
          */
         val createMsix = project.tasks.register("createMsix", CreateMsixTask::class.java) { task ->
@@ -106,7 +122,7 @@ class MsixPlugin : Plugin<Project> {
             task.processorArchitecture.set(extension.manifest.processorArchitecture)
             task.signingPfxFile.set(extension.signingPfx)
             task.signingPassword.set(extension.signingPassword)
-            task.dependsOn(createIcons, createManifest)
+            task.dependsOn(createIcons, createManifest, createPri)
             task.group = "msix"
             task.description = "Build and optionally sign an MSIX package using makeappx.exe."
         }
@@ -119,6 +135,7 @@ class MsixPlugin : Plugin<Project> {
         createMsix.configure { it.dependsOn(releaseTaskName) }
         createIcons.configure { it.mustRunAfter(releaseTaskName) }
         createManifest.configure { it.mustRunAfter(releaseTaskName) }
+        createPri.configure { it.mustRunAfter(releaseTaskName) }
     }
 
     /**

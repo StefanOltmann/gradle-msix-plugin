@@ -28,12 +28,14 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.*
 import java.io.File
 import java.io.FileOutputStream
+import kotlin.math.roundToInt
 
 /**
  * Creates the fixed set of MSIX PNG resources from a single SVG source file.
  *
  * The output sizes and filenames are internal to the plugin to ensure
- * consistent manifest references and avoid configuration drift.
+ * consistent manifest references and avoid configuration drift. Scale-qualified
+ * resources are generated for additional icon sizes and indexed via makepri.
  */
 @CacheableTask
 abstract class CreateMsixIconsTask : DefaultTask() {
@@ -75,23 +77,21 @@ abstract class CreateMsixIconsTask : DefaultTask() {
         val outputRoot = outputDir.get().asFile
         outputRoot.mkdirs()
 
-        renderSvgToPng(
-            svgFile = svgFile,
-            targetFile = outputRoot.resolve("StoreLogo.png"),
-            size = 256
+        val scaleFactors = listOf(100, 125, 150, 200, 400)
+
+        val assets = listOf(
+            IconAsset(name = "StoreLogo", baseSize = 50),
+            IconAsset(name = "Square44x44Logo", baseSize = 44),
+            IconAsset(name = "Square150x150Logo", baseSize = 150)
         )
 
-        renderSvgToPng(
-            svgFile = svgFile,
-            targetFile = outputRoot.resolve("Square44x44Logo.png"),
-            size = 44
-        )
-
-        renderSvgToPng(
-            svgFile = svgFile,
-            targetFile = outputRoot.resolve("Square150x150Logo.png"),
-            size = 150
-        )
+        assets.forEach { asset ->
+            scaleFactors.forEach { scale ->
+                val size = (asset.baseSize * scale / 100.0).roundToInt()
+                val targetFile = outputRoot.resolve(asset.fileName(scale))
+                renderSvgToPng(svgFile = svgFile, targetFile = targetFile, size = size)
+            }
+        }
 
         logger.lifecycle("Rendered PNG resources in ${outputRoot.absolutePath}")
     }
@@ -113,5 +113,13 @@ abstract class CreateMsixIconsTask : DefaultTask() {
                 transcoder.transcode(input, output)
             }
         }
+    }
+
+    private data class IconAsset(
+        val name: String,
+        val baseSize: Int
+    ) {
+        fun fileName(scale: Int): String =
+            if (scale == 100) "$name.png" else "$name.scale-$scale.png"
     }
 }

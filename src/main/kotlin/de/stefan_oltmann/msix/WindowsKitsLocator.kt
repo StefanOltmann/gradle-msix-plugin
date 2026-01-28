@@ -45,6 +45,13 @@ internal object WindowsKitsLocator {
         locateTool("signtool.exe", architecture)
 
     /**
+     * Locates makepri.exe for the requested architecture.
+     * Returns null when it cannot be found.
+     */
+    fun locateMakePri(architecture: String): File? =
+        locateTool("makepri.exe", architecture)
+
+    /**
      * Locates a tool in the Windows Kits "bin" directory hierarchy.
      */
     private fun locateTool(toolName: String, architecture: String): File? {
