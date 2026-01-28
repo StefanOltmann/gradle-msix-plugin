@@ -29,7 +29,7 @@ Apply the plugin and configure the MSIX manifest values:
 
 ```kotlin
 plugins {
-    id("de.stefan-oltmann.gradle-msix-plugin") version "0.1.0"
+    id("de.stefan-oltmann.gradle-msix-plugin") version "0.1.1"
 }
 
 msix {

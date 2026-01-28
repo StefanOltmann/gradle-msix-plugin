@@ -46,7 +46,7 @@ class MsixPlugin : Plugin<Project> {
         extension.manifest.backgroundColor.convention("transparent")
         extension.manifest.targetDeviceFamilyName.convention("Windows.Desktop")
         extension.manifest.targetDeviceFamilyMinVersion.convention("10.0.17763.0")
-        extension.manifest.targetDeviceFamilyMaxVersionTested.convention("10.0.22621.0")
+        extension.manifest.targetDeviceFamilyMaxVersionTested.convention("10.0.22621.2861")
 
         /*
          * Resolve the Compose Desktop output layout at once and share it across tasks.

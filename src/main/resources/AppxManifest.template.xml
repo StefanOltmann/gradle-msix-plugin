@@ -14,8 +14,23 @@
     <Properties>
         <DisplayName>{{displayName}}</DisplayName>
         <PublisherDisplayName>{{publisherDisplayName}}</PublisherDisplayName>
-        <Logo>resources/icon_50.png</Logo>
+        <Logo>resources/StoreLogo.png</Logo>
     </Properties>
+
+    <Applications>
+        <Application
+            Id="{{appId}}"
+            Executable="{{appExecutable}}"
+            EntryPoint="Windows.FullTrustApplication">
+            <uap:VisualElements
+                DisplayName="{{displayName}}"
+                Description="{{description}}"
+                BackgroundColor="{{backgroundColor}}"
+                Square150x150Logo="resources/Square150x150Logo.png"
+                Square44x44Logo="resources/Square44x44Logo.png">
+            </uap:VisualElements>
+        </Application>
+    </Applications>
 
     <Dependencies>
         <TargetDeviceFamily
@@ -27,21 +42,6 @@
     <Resources>
         <Resource Language="en-us"/>
     </Resources>
-
-    <Applications>
-        <Application
-            Id="{{appId}}"
-            Executable="{{appExecutable}}"
-            EntryPoint="Windows.FullTrustApplication">
-            <uap:VisualElements
-                DisplayName="{{displayName}}"
-                Description="{{description}}"
-                BackgroundColor="{{backgroundColor}}"
-                Square150x150Logo="resources/icon_150.png"
-                Square44x44Logo="resources/icon_44.png">
-            </uap:VisualElements>
-        </Application>
-    </Applications>
 
     <Capabilities>
         <rescap:Capability Name="runFullTrust"/>

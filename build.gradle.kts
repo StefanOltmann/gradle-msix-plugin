@@ -7,7 +7,7 @@ plugins {
 
 // Note: Group must have a hyphen to match plugin id
 group = "de.stefan-oltmann"
-version = "0.1.0"
+version = "0.1.1"
 
 repositories {
     mavenCentral()

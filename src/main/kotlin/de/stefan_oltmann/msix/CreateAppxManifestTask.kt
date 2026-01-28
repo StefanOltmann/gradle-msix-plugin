@@ -152,7 +152,7 @@ abstract class CreateAppxManifestTask : DefaultTask() {
     /**
      * Maximum Windows version tested.
      *
-     * Example: "10.0.22621.0".
+     * Example: "10.0.22621.2861".
      */
     @get:Input
     abstract val targetDeviceFamilyMaxVersionTested: Property<String>

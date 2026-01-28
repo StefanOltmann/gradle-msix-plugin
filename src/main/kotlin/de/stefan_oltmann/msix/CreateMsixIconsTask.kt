@@ -26,6 +26,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.*
+import java.io.File
 import java.io.FileOutputStream
 
 /**
@@ -74,19 +75,28 @@ abstract class CreateMsixIconsTask : DefaultTask() {
         val outputRoot = outputDir.get().asFile
         outputRoot.mkdirs()
 
-        /*
-         * Render every required MSIX icon size using fixed filenames
-         * that align with the manifest template.
-         */
-        setOf(44, 50, 150).forEach { size ->
-            val targetFile = outputRoot.resolve("icon_$size.png")
-            renderSvgToPng(svgFile, targetFile, size)
-        }
+        renderSvgToPng(
+            svgFile = svgFile,
+            targetFile = outputRoot.resolve("StoreLogo.png"),
+            size = 256
+        )
+
+        renderSvgToPng(
+            svgFile = svgFile,
+            targetFile = outputRoot.resolve("Square44x44Logo.png"),
+            size = 44
+        )
+
+        renderSvgToPng(
+            svgFile = svgFile,
+            targetFile = outputRoot.resolve("Square150x150Logo.png"),
+            size = 150
+        )
 
         logger.lifecycle("Rendered PNG resources in ${outputRoot.absolutePath}")
     }
 
-    private fun renderSvgToPng(svgFile: java.io.File, targetFile: java.io.File, size: Int) {
+    private fun renderSvgToPng(svgFile: File, targetFile: File, size: Int) {
 
         /*
          * Batik renders the SVG into a PNG at the requested dimensions.
