@@ -29,7 +29,7 @@ Apply the plugin and configure the MSIX manifest values:
 
 ```kotlin
 plugins {
-    id("de.stefan-oltmann.gradle-msix-plugin") version "0.1.1"
+    id("de.stefan-oltmann.gradle-msix-plugin") version "0.2.0"
 }
 
 msix {
@@ -41,15 +41,17 @@ msix {
 
     /*
      * Optional: enable signing by pointing at a PFX file.
+     * 
+     * Also see the notes below regarding configuration from environment variables.
      */
     signingPfx.set(layout.projectDirectory.file("packaging/msix/sign.pfx"))
     signingPassword.set("test")
 
     manifest {
-        appId.set("App")
+        appId.set("MyApp")
         displayName.set("My App")
         description.set("Short description for Windows.")
-        identityName.set("com.example.MyApp")
+        identityName.set("YourName.MyApp")
         publisher.set("CN=YOUR-PUBLISHER-ID")
         publisherDisplayName.set("My Company")
         version.set("1.0.0.0")
@@ -70,3 +72,24 @@ Run the packaging task:
 - `createMsix` - Runs `createReleaseDistributable`, creates resources + manifest, packs the MSIX, and signs it when a PFX is configured.
 - `createMsixIcons` - Creates the MSIX PNG resources from the SVG.
 - `createAppxManifest` - Writes AppxManifest.xml into the app directory.
+
+## Use from environment variables
+
+Signing can also be driven by environment variables, which is handy for CI/CD systems such as GitHub Actions.
+
+- If `msix.signingPfx` is not set (or the file is missing), the plugin will look for `MSIX_SIGN_PFX_BASE64`.
+- The password can be supplied either via `msix.signingPassword` or `MSIX_SIGN_PFX_PASSWORD` (useful for keeping secrets out of VCS).
+
+On Windows using PowerShell you can turn your PFX file into base64 like this:
+
+```
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("sign.pfx"))
+```
+
+Example for GitHub Actions:
+
+```yaml
+env:
+    MSIX_SIGN_PFX_BASE64: ${{ secrets.MSIX_SIGN_PFX_BASE64 }}
+    MSIX_SIGN_PFX_PASSWORD: ${{ secrets.MSIX_SIGN_PFX_PASSWORD }}
+```

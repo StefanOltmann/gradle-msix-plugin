@@ -24,8 +24,10 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
+import org.gradle.api.tasks.Optional
 import org.gradle.process.ExecOperations
 import java.io.File
+import java.util.*
 import javax.inject.Inject
 
 /**
@@ -38,6 +40,11 @@ import javax.inject.Inject
 abstract class CreateMsixTask @Inject constructor(
     private val execOperations: ExecOperations
 ) : DefaultTask() {
+
+    private companion object {
+        const val ENV_SIGN_PFX_BASE64 = "MSIX_SIGN_PFX_BASE64"
+        const val ENV_SIGN_PASSWORD = "MSIX_SIGN_PFX_PASSWORD"
+    }
 
     /**
      * Windows SDK install instructions shown when required tools are missing.
@@ -162,18 +169,12 @@ abstract class CreateMsixTask @Inject constructor(
 
     private fun signIfConfigured(target: File) {
 
-        if (!signingPfxFile.isPresent) {
-            logger.lifecycle("Skipping MSIX signing because no PFX file was configured.")
+        val config = resolveSigningConfig()
+
+        if (config == null) {
+            logger.lifecycle("Skipping MSIX signing because no PFX file was configured and $ENV_SIGN_PFX_BASE64 is not set.")
             return
         }
-
-        val password = signingPassword.orNull?.takeIf { it.isNotBlank() }
-            ?: throw GradleException("MSIX signing is enabled but msix.signingPassword is missing. Provide the PFX password.")
-
-        val pfxFile = signingPfxFile.get().asFile
-
-        if (!pfxFile.exists())
-            throw GradleException("Signing PFX file not found at ${pfxFile.absolutePath}")
 
         val signTool = resolveSignTool()
 
@@ -182,28 +183,109 @@ abstract class CreateMsixTask @Inject constructor(
         /*
          * Sign the created MSIX package using the provided PFX file.
          */
-        logger.lifecycle("Signing MSIX package with ${pfxFile.absolutePath}")
-        logger.lifecycle("Running: ${signTool.absolutePath} sign /fd SHA256 /f ${pfxFile.absolutePath} /p <redacted> ${target.absolutePath}")
+        logger.lifecycle("Signing MSIX package with ${config.pfxFile.absolutePath}")
+        logger.lifecycle("Running: ${signTool.absolutePath} sign /fd SHA256 /f ${config.pfxFile.absolutePath} /p <redacted> ${target.absolutePath}")
 
-        execOperations.exec { spec ->
-            spec.workingDir(signTool.parentFile)
-            spec.commandLine(
-                signTool.absolutePath,
-                "sign",
-                "/fd",
-                "SHA256",
-                "/f",
-                pfxFile.absolutePath,
-                "/p",
-                password,
-                target.absolutePath
-            )
-            spec.standardOutput = System.out
-            spec.errorOutput = System.err
+        try {
+            execOperations.exec { spec ->
+                spec.workingDir(signTool.parentFile)
+                spec.commandLine(
+                    signTool.absolutePath,
+                    "sign",
+                    "/fd",
+                    "SHA256",
+                    "/f",
+                    config.pfxFile.absolutePath,
+                    "/p",
+                    config.password,
+                    target.absolutePath
+                )
+                spec.standardOutput = System.out
+                spec.errorOutput = System.err
+            }
+        } finally {
+            config.cleanup?.invoke()
         }
 
         logger.lifecycle("Signed MSIX package at ${target.absolutePath}")
     }
+
+    private fun resolveSigningConfig(): SigningConfig? {
+
+        val pfxFromProperty = signingPfxFile.orNull?.asFile
+        val passwordFromProperty = signingPassword.orNull?.trim()?.takeIf { it.isNotEmpty() }
+
+        val envPfxBase64 = System.getenv(ENV_SIGN_PFX_BASE64)?.trim()?.takeIf { it.isNotEmpty() }
+        val envPassword = System.getenv(ENV_SIGN_PASSWORD)?.trim()?.takeIf { it.isNotEmpty() }
+
+        if (pfxFromProperty != null) {
+
+            if (pfxFromProperty.exists()) {
+                val password = passwordFromProperty
+                    ?: envPassword
+                    ?: throw GradleException(
+                        "MSIX signing is enabled but msix.signingPassword is missing. " +
+                            "Provide the PFX password or set $ENV_SIGN_PASSWORD."
+                    )
+
+                return SigningConfig(pfxFromProperty, password)
+            }
+
+            if (envPfxBase64 == null)
+                throw GradleException("Signing PFX file not found at ${pfxFromProperty.absolutePath}")
+
+            logger.info(
+                "Configured signing PFX file not found at ${pfxFromProperty.absolutePath}. " +
+                    "Falling back to $ENV_SIGN_PFX_BASE64."
+            )
+        }
+
+        if (envPfxBase64 == null)
+            return null
+
+        val password = passwordFromProperty
+            ?: envPassword
+            ?: throw GradleException(
+                "MSIX signing is enabled via $ENV_SIGN_PFX_BASE64 but the password is missing. " +
+                    "Set msix.signingPassword or $ENV_SIGN_PASSWORD."
+            )
+
+        val tempPfxFile = writePfxToTempFile(envPfxBase64)
+
+        logger.lifecycle("Signing PFX loaded from $ENV_SIGN_PFX_BASE64 into ${tempPfxFile.absolutePath}")
+
+        return SigningConfig(tempPfxFile, password) {
+
+            if (!tempPfxFile.delete())
+                logger.warn("Unable to delete temporary PFX file at ${tempPfxFile.absolutePath}")
+        }
+    }
+
+    private fun writePfxToTempFile(base64Value: String): File {
+
+        val decoded = try {
+            Base64.getDecoder().decode(base64Value)
+        } catch (ex: IllegalArgumentException) {
+            throw GradleException("$ENV_SIGN_PFX_BASE64 does not contain valid base64 data.", ex)
+        }
+
+        val tempDir = temporaryDir
+
+        if (!tempDir.exists())
+            tempDir.mkdirs()
+
+        val pfxFile = File(tempDir, "msix-signing.pfx")
+
+        pfxFile.writeBytes(decoded)
+
+        return pfxFile
+    }
+
+    private data class SigningConfig(
+        val pfxFile: File,
+        val password: String,
+        val cleanup: (() -> Unit)? = null
+    )
 
     private fun resolveMakeAppx(): File {
 
