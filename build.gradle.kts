@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "2.3.0"
+    kotlin("jvm") version "2.3.10"
     `java-gradle-plugin`
     `maven-publish`
     id("com.gradle.plugin-publish") version "2.0.0"
@@ -7,7 +7,7 @@ plugins {
 
 // Note: Group must have a hyphen to match plugin id
 group = "de.stefan-oltmann"
-version = "0.2.0"
+version = "0.2.1"
 
 repositories {
     mavenCentral()

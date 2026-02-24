@@ -1,6 +1,6 @@
 # Gradle MSIX Plugin
 
-![Kotlin](https://img.shields.io/badge/kotlin-2.3.0-blue.svg?logo=kotlin)
+![Kotlin](https://img.shields.io/badge/kotlin-2.3.10-blue.svg?logo=kotlin)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-gray?&logo=GitHub-Sponsors&logoColor=EA4AAA)](https://github.com/sponsors/StefanOltmann)
 
@@ -29,7 +29,7 @@ Apply the plugin and configure the MSIX manifest values:
 
 ```kotlin
 plugins {
-    id("de.stefan-oltmann.gradle-msix-plugin") version "0.2.0"
+    id("de.stefan-oltmann.gradle-msix-plugin") version "0.2.1"
 }
 
 msix {
