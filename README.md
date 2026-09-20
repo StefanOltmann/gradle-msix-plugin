@@ -44,7 +44,7 @@ msix {
      *
      * Should match `compose.desktop.application.nativeDistributions.packageName`.
      */
-    packageName.set("PixRater")
+    packageName.set("MyApp")
 
     /*
      * Optional: defaults to packaging/msix/resources/AppIcon.svg

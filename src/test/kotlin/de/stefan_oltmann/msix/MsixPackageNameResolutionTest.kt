@@ -64,7 +64,7 @@ class MsixPackageNameResolutionTest {
 
         writeConsumerBuild(
             """
-            packageName.set("PixRater")
+            packageName.set("MyApp")
             $manifestValues
             """.trimIndent()
         )
@@ -74,7 +74,7 @@ class MsixPackageNameResolutionTest {
         val layoutRoot = projectDir.resolve("build/compose/binaries/main-release/app")
 
         assertTrue(
-            layoutRoot.resolve("PixRater/AppxManifest.xml").exists(),
+            layoutRoot.resolve("MyApp/AppxManifest.xml").exists(),
             "The manifest must be rendered into the directory named after the configured " +
                 "package name"
         )
