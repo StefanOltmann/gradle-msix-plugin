@@ -17,6 +17,9 @@ repositories {
 dependencies {
     implementation(libs.batik.transcoder)
     implementation(libs.batik.codec)
+
+    testImplementation(gradleTestKit())
+    testImplementation(kotlin("test"))
 }
 
 gradlePlugin {

@@ -21,14 +21,16 @@ package de.stefan_oltmann.msix
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
 
 /**
  * Creates an AppxManifest.xml file from configured manifest properties.
  *
- * Resource paths and resource language are fixed in the template to keep the
- * manifest output aligned with created PNG resources.
+ * Resource paths are fixed in the template to keep the manifest output aligned with
+ * created PNG resources; the resource languages are rendered from configuration into the
+ * template's {{resourceLanguages}} placeholder.
  */
 @CacheableTask
 abstract class CreateAppxManifestTask : DefaultTask() {
@@ -158,6 +160,14 @@ abstract class CreateAppxManifestTask : DefaultTask() {
     abstract val targetDeviceFamilyMaxVersionTested: Property<String>
 
     /**
+     * The languages declared as resource languages, one `<Resource>` element each.
+     *
+     * Rendered into the `{{resourceLanguages}}` placeholder. Defaults to English only.
+     */
+    @get:Input
+    abstract val languages: ListProperty<String>
+
+    /**
      * Writes the rendered AppxManifest.xml to the configured output file.
      */
     @TaskAction
@@ -208,7 +218,13 @@ abstract class CreateAppxManifestTask : DefaultTask() {
             "appId" to appId.get(),
             "targetDeviceFamilyName" to targetDeviceFamilyName.get(),
             "targetDeviceFamilyMinVersion" to targetDeviceFamilyMinVersion.get(),
-            "targetDeviceFamilyMaxVersionTested" to targetDeviceFamilyMaxVersionTested.get()
+            "targetDeviceFamilyMaxVersionTested" to targetDeviceFamilyMaxVersionTested.get(),
+
+            /*
+             * A placeholder carrying repeated elements rather than a single value: one
+             * `<Resource>` element per configured language.
+             */
+            "resourceLanguages" to resourceLanguageElements()
         )
 
         /*
@@ -221,5 +237,24 @@ abstract class CreateAppxManifestTask : DefaultTask() {
         }
 
         return rendered
+    }
+
+    /**
+     * One `<Resource Language="..."/>` element per configured language, so a Store listing
+     * knows every language the app supports. A multi-language app that declares only one of
+     * its languages would be invisible in the Store under the others.
+     */
+    private fun resourceLanguageElements(): String {
+
+        val languages = languages.get()
+
+        if (languages.isEmpty())
+            throw GradleException(
+                "msix.manifest.languages must not be empty - a manifest without resource " +
+                    "languages is rejected by the Store. Configure at least one language, " +
+                    "for example listOf(\"en\")."
+            )
+
+        return languages.joinToString(separator = "\n        ") { "<Resource Language=\"$it\"/>" }
     }
 }

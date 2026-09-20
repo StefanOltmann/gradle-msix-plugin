@@ -35,6 +35,18 @@ plugins {
 msix {
 
     /*
+     * Recommended: the distribution name the packaging layout is resolved under
+     * (build/compose/binaries/main-release/app/<name>). When unset, the plugin reads the
+     * name from the Compose Desktop configuration and finally falls back to the Gradle
+     * project name. Set it to make the packaging paths deterministic - especially for
+     * standalone runs of the packaging tasks and freshly checked-out machines, where the
+     * implicit resolutions have nothing to read yet.
+     *
+     * Should match `compose.desktop.application.nativeDistributions.packageName`.
+     */
+    packageName.set("PixRater")
+
+    /*
      * Optional: defaults to packaging/msix/resources/AppIcon.svg
      */
     svgIcon.set(layout.projectDirectory.file("packaging/msix/resources/AppIcon.svg"))
@@ -57,6 +69,14 @@ msix {
         version.set("1.0.0.0")
         processorArchitecture.set("x64")
         appExecutable.set("MyApp.exe")
+
+        /*
+         * Optional: defaults to listOf("en"). One <Resource Language="..."/> element per
+         * language is rendered into the default template's {{resourceLanguages}}
+         * placeholder - declare every language your app supports so the Store lists it
+         * under all of them. A custom template without the placeholder is unaffected.
+         */
+        languages.set(listOf("en", "de"))
     }
 }
 ```

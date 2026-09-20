@@ -40,7 +40,7 @@
     </Dependencies>
 
     <Resources>
-        <Resource Language="en"/>
+        {{resourceLanguages}}
     </Resources>
 
     <Capabilities>

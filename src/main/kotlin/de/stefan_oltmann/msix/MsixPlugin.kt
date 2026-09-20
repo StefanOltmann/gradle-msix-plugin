@@ -20,6 +20,9 @@ package de.stefan_oltmann.msix
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
+import org.gradle.api.plugins.ExtensionAware
+import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 
 /**
@@ -47,11 +50,13 @@ class MsixPlugin : Plugin<Project> {
         extension.manifest.targetDeviceFamilyName.convention("Windows.Desktop")
         extension.manifest.targetDeviceFamilyMinVersion.convention("10.0.17763.0")
         extension.manifest.targetDeviceFamilyMaxVersionTested.convention("10.0.22621.2861")
+        extension.manifest.languages.convention(listOf("en"))
 
         /*
          * Resolve the Compose Desktop output layout at once and share it across tasks.
          */
-        val packageNameProvider = project.providers.provider { resolvePackageName(project) }
+        val packageNameProvider =
+            project.providers.provider { resolvePackageName(project, extension.packageName) }
 
         val appRoot = project.layout.buildDirectory.dir("compose/binaries/main-release/app")
 
@@ -93,6 +98,7 @@ class MsixPlugin : Plugin<Project> {
                 task.targetDeviceFamilyName.set(extension.manifest.targetDeviceFamilyName)
                 task.targetDeviceFamilyMinVersion.set(extension.manifest.targetDeviceFamilyMinVersion)
                 task.targetDeviceFamilyMaxVersionTested.set(extension.manifest.targetDeviceFamilyMaxVersionTested)
+                task.languages.set(extension.manifest.languages)
                 task.group = "msix"
                 task.description = "Create AppxManifest.xml for MSIX packaging."
             }
@@ -112,43 +118,61 @@ class MsixPlugin : Plugin<Project> {
         }
 
         /*
-         * Ensure the Compose release distributable is created before packaging runs.
+         * Ensure the Compose release distributable is created before packaging runs. The
+         * relationship is matched by name through a provider instead of referenced by raw
+         * task name: the Compose plugin may be applied after this one, or not at all - the
+         * msix tasks must stay usable standalone when a consumer prepares the app directory
+         * themselves. A hard name reference would fail task graph calculation for every
+         * consumer without Compose.
          */
         val releaseTaskName = "createReleaseDistributable"
 
-        createMsix.configure { it.dependsOn(releaseTaskName) }
-        createIcons.configure { it.mustRunAfter(releaseTaskName) }
-        createManifest.configure { it.mustRunAfter(releaseTaskName) }
+        val composeDistributionTask: Provider<out Iterable<Task>> = project.provider {
+            project.tasks.matching { it.name == releaseTaskName }
+        }
+
+        createMsix.configure { it.dependsOn(composeDistributionTask) }
+        createIcons.configure { it.mustRunAfter(composeDistributionTask) }
+        createManifest.configure { it.mustRunAfter(composeDistributionTask) }
     }
 
     /**
-     * Resolves the package name from Compose configuration or falls back
-     * to the Gradle project name.
+     * Resolves the distribution name the packaging layout lives under, in order of
+     * reliability: the explicitly configured name, the Compose Desktop configuration, the
+     * already-built output directory, and finally the Gradle project name.
      */
-    private fun resolvePackageName(project: Project): String {
+    private fun resolvePackageName(
+        project: Project,
+        configuredName: Property<String>
+    ): String {
 
-        val composeName = findComposePackageName(project)?.takeIf { it.isNotBlank() }
+        configuredName.orNull?.takeIf { it.isNotBlank() }?.let { return it }
 
-        if (composeName != null)
-            return composeName
+        findComposePackageName(project)?.takeIf { it.isNotBlank() }?.let { return it }
 
-        val outputName = findPackageNameFromOutput(project)?.takeIf { it.isNotBlank() }
-        return outputName ?: project.name
+        findPackageNameFromOutput(project)?.takeIf { it.isNotBlank() }?.let { return it }
+
+        return project.name
     }
 
     /**
      * Attempts to read the Compose Desktop native distribution package name.
      *
-     * Reflection is used to avoid compile-time coupling to Compose internals.
+     * Reflection is used to avoid compile-time coupling to Compose internals. Two shapes are
+     * supported: Compose Multiplatform up to 1.11 exposed the desktop extension as the
+     * `getDesktop` method of the `compose` extension, and 1.12+ registers it as the `desktop`
+     * child extension of the (now ExtensionAware) `compose` extension.
      */
     private fun findComposePackageName(project: Project): String? {
 
         val composeExtension = project.extensions.findByName("compose") ?: return null
 
-        return runCatching {
+        val desktop = composeExtension.javaClass.methods.firstOrNull { it.name == "getDesktop" }
+            ?.invoke(composeExtension)
+            ?: (composeExtension as? ExtensionAware)?.extensions?.findByName("desktop")
+            ?: return null
 
-            val desktop = composeExtension.javaClass.methods.firstOrNull { it.name == "getDesktop" }
-                ?.invoke(composeExtension) ?: return@runCatching null
+        return runCatching {
 
             val application = desktop.javaClass.methods.firstOrNull { it.name == "getApplication" }
                 ?.invoke(desktop) ?: return@runCatching null

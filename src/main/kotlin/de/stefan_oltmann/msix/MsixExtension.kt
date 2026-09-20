@@ -35,6 +35,18 @@ abstract class MsixExtension @Inject constructor(
 ) {
 
     /**
+     * The distribution name the packaging layout is resolved under
+     * (`build/compose/binaries/main-release/app/<name>`).
+     *
+     * When unset, the plugin reads the name from the Compose Desktop configuration and
+     * finally falls back to the Gradle project name - resolutions that depend on what is
+     * configured or already built at realization time. Setting this property removes that
+     * dependency: standalone runs of the packaging tasks and freshly checked-out machines
+     * get deterministic paths.
+     */
+    val packageName: Property<String> = objects.property(String::class.java)
+
+    /**
      * Path to the SVG icon that will be rendered into fixed MSIX PNG resources.
      *
      * The plugin renders fixed sizes that match the hardcoded manifest entries.

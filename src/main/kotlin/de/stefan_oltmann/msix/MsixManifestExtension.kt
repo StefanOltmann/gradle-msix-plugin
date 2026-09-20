@@ -20,6 +20,7 @@ package de.stefan_oltmann.msix
 
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import javax.inject.Inject
 
@@ -27,8 +28,9 @@ import javax.inject.Inject
  * Holds the manifest values required to render a valid AppxManifest.xml file.
  *
  * These values describe package identity, visual metadata, and target device
- * compatibility. Asset paths and resource language are fixed in the template,
- * so the configuration only captures the metadata that actually varies per app.
+ * compatibility. Asset paths are fixed in the template; the resource languages are
+ * rendered into it from [languages], so the configuration only captures the metadata
+ * that actually varies per app.
  */
 abstract class MsixManifestExtension @Inject constructor(
     objects: ObjectFactory
@@ -37,7 +39,8 @@ abstract class MsixManifestExtension @Inject constructor(
     /**
      * Optional template file that overrides the built-in template.
      *
-     * The template must keep the fixed logo paths and resource language values.
+     * The template must keep the fixed logo paths, and either the `{{resourceLanguages}}`
+     * placeholder or its own `<Resource>` elements.
      */
     val templateFile: RegularFileProperty = objects.fileProperty()
 
@@ -115,5 +118,17 @@ abstract class MsixManifestExtension @Inject constructor(
 
     /** Maximum Windows version tested. */
     val targetDeviceFamilyMaxVersionTested: Property<String> = objects.property(String::class.java)
+
+    /**
+     * The languages the manifest declares as resource languages, one `<Resource>` element
+     * each (BCP-47 tags such as "en" or "de").
+     *
+     * Only the default template renders them, by filling its `{{resourceLanguages}}`
+     * placeholder. A custom template without the placeholder declares its resources itself
+     * and is not affected by this property.
+     *
+     * Defaults to English only.
+     */
+    val languages: ListProperty<String> = objects.listProperty(String::class.java)
 
 }
