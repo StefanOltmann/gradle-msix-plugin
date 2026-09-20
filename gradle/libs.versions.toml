@@ -1,0 +1,12 @@
+[versions]
+kotlin = "2.4.20"
+pluginPublish = "2.2.1"
+batik = "1.19"
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+plugin-publish = { id = "com.gradle.plugin-publish", version.ref = "pluginPublish" }
+
+[libraries]
+batik-transcoder = { module = "org.apache.xmlgraphics:batik-transcoder", version.ref = "batik" }
+batik-codec = { module = "org.apache.xmlgraphics:batik-codec", version.ref = "batik" }

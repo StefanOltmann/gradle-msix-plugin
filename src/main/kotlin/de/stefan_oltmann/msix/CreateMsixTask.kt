@@ -37,6 +37,7 @@ import javax.inject.Inject
  * Windows SDK for the requested architecture. Optional signing is performed
  * with signtool.exe when a PFX file is provided.
  */
+@CacheableTask
 abstract class CreateMsixTask @Inject constructor(
     private val execOperations: ExecOperations
 ) : DefaultTask() {
@@ -63,6 +64,7 @@ abstract class CreateMsixTask @Inject constructor(
      * The directory must already include the manifest and resources.
      */
     @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val appDirectory: DirectoryProperty
 
     /**

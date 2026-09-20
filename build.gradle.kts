@@ -1,13 +1,13 @@
 plugins {
-    kotlin("jvm") version "2.3.10"
-    `java-gradle-plugin`
-    `maven-publish`
-    id("com.gradle.plugin-publish") version "2.0.0"
+    id("java-gradle-plugin")
+    id("maven-publish")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.plugin.publish)
 }
 
-// Note: Group must have a hyphen to match plugin id
+/* Note: Group must have a hyphen to match plugin id */
 group = "de.stefan-oltmann"
-version = "0.2.1"
+version = "0.3.0"
 
 repositories {
     mavenCentral()
@@ -15,8 +15,8 @@ repositories {
 }
 
 dependencies {
-    implementation("org.apache.xmlgraphics:batik-transcoder:1.19")
-    implementation("org.apache.xmlgraphics:batik-codec:1.19")
+    implementation(libs.batik.transcoder)
+    implementation(libs.batik.codec)
 }
 
 gradlePlugin {
